@@ -7,7 +7,7 @@ Maintainer: Christian Buchta <christian.buchta@wu.ac.at>
 Description: Add-on for arules to handle and mine frequent sequences.
     Provides interfaces to the C++ implementation of cSPADE by  
     Mohammed J. Zaki.
-Depends: R (>= 3.0.2), methods, arules (>= 1.1-1)
+Depends: R (>= 3.0.2), methods, arules
 License: GPL-2
 NeedsCompilation: yes
 Packaged: 2015-08-11 12:56:51 UTC; hornik
