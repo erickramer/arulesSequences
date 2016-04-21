@@ -4,7 +4,7 @@ library("arulesSequences")
 ## basic tests using the small running 
 ## example from the paper. 
 ##
-## ceeboo 2007
+## ceeboo 2007, 2014, 2015
 
 ## data set
 
@@ -134,5 +134,31 @@ transactionInfo(tidLists(s1))
 
 z <- supportingTransactions(s1, zaki)
 all.equal(tidLists(s1[1:4, ]), z[1:4, ])
+
+z <- support(s1, zaki, control = list(parameter = list()))
+all.equal(z, quality(s1)$support)
+
+## drop times
+z <- as(as(zaki, "timedsequences"), "sequences")
+z <- support(s1, z, control = list(parameter = list()))
+all.equal(z, quality(s1)$support)
+
+##
+z <- quality(s1)$support
+z <- z > apply(is.subset(s1, proper = TRUE), 1L, function(x)
+	       suppressWarnings(max(z[x])))
+all.equal(z, is.closed(s1))
+
+##
+r <- ruleInduction(s2[size(s2) > 1L], zaki, confidence = 0.5)
+all.equal(as(r2, "data.frame"), as(r, "data.frame"))
+
+##
+k <- rhs(r1) %ain% "A"
+z <- quality(r1)$confidence[k]
+z <- z <= apply(is.superset(lhs(r1)[k], proper = TRUE), 1L, function(x)
+		suppressWarnings(max(z[x])))
+all.equal(z, is.redundant(r1)[k])
+
 
 ###

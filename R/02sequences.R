@@ -6,7 +6,7 @@
 ## class "transactions". hence the class name serves as
 ## a blocker.
 ##
-## ceeboo 2007, 2008, 2014
+## ceeboo 2007, 2008, 2014, 2015
 
 setClass("sequences",
     representation(
@@ -203,7 +203,8 @@ setAs("list", "sequences",
         s <- .Call(R_colSubset_ngCMatrix, i, !duplicated(s))
 
         e <- new("itemMatrix", data     = s,
-                               itemInfo = data.frame(labels = I(l)))
+                               itemInfo = data.frame(labels = l,
+						     stringsAsFactors = FALSE))
 
         e <- new("itemsets", items = e)
 
@@ -221,7 +222,8 @@ setAs("list", "sequences",
                          data         = s,
                          sequenceInfo = data.frame(sequenceID =
 			    if (!is.null(names(from)))
-				I(names(from))
+				names(from),
+			    stringsAsFactors = FALSE
 			 ))
     }
 )
@@ -232,14 +234,14 @@ setAs("sequences", "list",
 setMethod("LIST", signature(from = "sequences"),
     function(from, decode = TRUE) {
         d <- if (decode) 
-                 as.character(from@elements@items@itemInfo$labels)
+                 as.character(from@elements@items@itemInfo[['labels']])
              else 
                  NULL
 
         i <- .Call(R_asList_ngCMatrix, from@elements@items@data, d)
         i <- .Call(R_asList_ngCMatrix, from@data, i)
         if (decode)
-            names(i) <- from@sequenceInfo$sequenceID
+            names(i) <- from@sequenceInfo[['sequenceID']]
         i
     }
 )
@@ -398,13 +400,23 @@ setClass("summary.sequences",
         lengths  = "table",
 	tidLists = "logical"
     ),
-    contains = "summary.associations"
+    contains = "summary.associations",
+
+    prototype(
+	length  = 0L, 
+	sizes   = table(NULL), 
+	lengths = table(NULL), 
+	quality = table(NULL)
+    )
 )
 
 setMethod("summary", signature(object = "sequences"),
     function(object, maxsum = 6) {
         if (!length(object))
-            return(new("summary.sequences", length = 0L))
+            return(new("summary.sequences", 
+		       ## see cspade
+		       info     = object@info,
+		       tidLists = FALSE))
 
         maxsum <- max(0, maxsum-1)
 
@@ -440,49 +452,70 @@ setMethod("summary", signature(object = "sequences"),
 setMethod("show", signature(object = "summary.sequences"),
     function(object) {
         cat("set of", object@length, "sequences with\n")
-        if (object@length) {
-            cat("\nmost frequent items:\n")
-            print(object@items)
+        cat("\nmost frequent items:\n")
+        print(object@items)
 
-            cat("\nmost frequent elements:\n")
-            print(object@elements)
+        cat("\nmost frequent elements:\n")
+        print(object@elements)
 
-            cat("\nelement (sequence) size distribution:\n")
-            print(object@sizes)
+        cat("\nelement (sequence) size distribution:\n")
+        print(object@sizes)
 
-            cat("\nsequence length distribution:\n")
-            print(object@lengths)
+        cat("\nsequence length distribution:\n")
+        print(object@lengths)
 
-            cat("\nsummary of quality measures:\n")
-            print(object@quality)
-	    cat("\nincludes transaction ID lists:", object@tidLists, "\n")           
-            if (length(object@info)) {
-                info <- object@info
-                if (is.language(info$data)) info$data <- deparse(info$data)
-                cat("\nmining info:\n")
-                print(data.frame(info, row.names = ""))
-            }
+        cat("\nsummary of quality measures:\n")
+        print(object@quality)
+
+	cat("\nincludes transaction ID lists:", object@tidLists, "\n")           
+        if (length(object@info)) {
+            info <- object@info
+            if (is.language(info$data)) info$data <- deparse(info$data)
+            cat("\nmining info:\n")
+            print(data.frame(info, row.names = ""))
         }
         invisible(NULL)
     }
 )
 
-# note that we require the index of an element
-# to be greater than the index of any of its
-# subsets.
+##
+setMethod("is.closed", signature(x = "sequences"),
+    function(x) {
+        support <- quality(x)$support
+	if (is.null(support))
+	    stop("'x' does not contain support information")
+	if (any(duplicated(x)))
+	    stop("'x' not unique")
+	if (FALSE) {
+	    if (any(is.na(support)))
+		stop("missing values not implemented")
+	    m <- is.subset(x)
+	    if (!all(m@x))
+		stop("reduce not implemented")
+	    m@x <- support[m@i + 1L] <=
+	           support[rep(seq_len(length(m@p) - 1L), diff(m@p))]
+	    m <- selectMethod("rowSums", class(m))(m) == 1L
+	    names(m) <- NULL
+	    m
+	} else
+	    .Call(R_pnsclosed, x@data, x@elements@items@data,
+		  rank(support, na.last = "keep", ties.method = "min"),
+		  FALSE)
+    }
+)
+
+##
 
 setMethod("is.maximal", signature(x = "sequences"),
     function(x) {
         u <- unique(x)
-        k <- order(.Call(R_colSums_ngCMatrix, u@elements@items@data),
-                   .Call(R_pnindex, u@elements@items@data, NULL, FALSE))
-        if (any(k != seq_len(length(k)))) {
-            u@elements <- u@elements[k]
-            k[k] <- seq_len(length(k))
-            u@data <- .Call(R_recode_ngCMatrix, u@data, k)
-        }
-        m <- .Call(R_pnscount,
-                   u@data, u@data, u@elements@items@data, FALSE) == 1
+	if (FALSE) { 
+	    m <- is.subset(u)
+	    m <- selectMethod("rowSums", class(m))(m) == 1L
+	    names(m) <- NULL
+	} else 
+	    m <- .Call(R_pnscount, u@data, u@data, 
+		       u@elements@items@data, FALSE) == 1L
         i <- match(x, u)
         m[i]
     }
@@ -500,8 +533,13 @@ setMethod("duplicated", signature(x = "sequences"),
 setMethod("unique", signature(x = "sequences"),
     function(x, incomparables = FALSE) x[!duplicated(x)])
 
-## note that %in% dispatches to match unless the
-## right hand operand is not of the same class
+## note that %in% does no longer dispatch to match unless
+## the right hand operand is not of the same class
+
+setMethod("%in%", signature(x = "sequences", table = "sequences"),
+    function(x, table)
+	match(x, table, nomatch = 0L) > 0L
+)
 
 setMethod("match", signature(x = "sequences", table = "sequences"),
     function(x, table, nomatch = NA_integer_, incomparables = NULL) {

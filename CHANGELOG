@@ -1,6 +1,65 @@
 
 NEWS/ChangeLog for arulesSequences
 
+0.2-14 2016-03-18
+
+    o Added ptree method for is.subset.
+
+    o arules fixes.
+
+0.2-13 2016-01-26
+
+    o Fixed file.exists in cspade to handle
+      number of partitions > 1.
+
+    o Fixed dimnames-method for sgCMatrix class.
+
+    o Fixed is.subset-method for sequences class.
+
+    o Added memory management in similarity.c.
+
+    o Added is.redundant-method for class sequencerules.
+
+    o Added closed check in ptree.c. 
+
+0.2-12 2015-11-30
+
+    o Bug fixes.
+
+0.2-11	2015-09-30
+
+    o Fixed and reactivated method ptree.
+
+    o Added is.closed-method for sequences class.
+
+    o Implemented method transactions in
+      ruleInduction-method for class sequences.
+
+    o Removed maximal from ruleInduction-method for 
+      class sequences.
+
+0.2-10	2015-08-31
+
+    o Removed method ptree from support-method for class
+      sequences.
+
+0.2-9	2015-08-27
+
+    o Fixed check of eid in makebin.c.
+
+    o Fixed sequence.cc. to override optional values
+      of min_gap that are lower than intended.
+
+    o Tightened the range of mingap in SPparamter-class. 
+
+    o Added method idlists to support-method for class
+      sequences.
+
+    o Added encoding to read_baskets.
+
+    o Fixed cspade to handle .idx and .tpose are not
+      created.
+
 0.2-8	2015-08-08
 
     o Added importFrom in NAMESPACE.

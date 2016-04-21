@@ -5,10 +5,13 @@ useDynLib(arulesSequences,
     R_colAppend_sgCMatrix,
     R_valid_sgCMatrix,
     R_firstOrder_sgCMatrix,
-    R_pnscount,
-    R_pnsindex,
     R_similarity_sgCMatrix,
-    R_as_dist_dsCMatrix
+    R_as_dist_dsCMatrix,
+    R_ilscount,
+    R_pnscount,
+    R_pnsclosed,
+    R_pnsredundant,
+    R_pnssuperset
 )
 
 import("methods")
@@ -44,8 +47,10 @@ exportMethods(
     "initialize",
     "inspect",
     "is.maximal",
+    "is.closed",
     "is.subset",
     "is.superset",
+    "is.redundant",
     "itemFrequency",
     "itemInfo",
     "itemInfo<-",
@@ -82,5 +87,6 @@ exportMethods(
 )
 
 ##
-importFrom("utils", "head", "tail", "type.convert")
+importFrom("arules", "head")
+importFrom("utils",  "tail", "type.convert")
 
